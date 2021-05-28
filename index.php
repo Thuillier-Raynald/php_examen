@@ -110,7 +110,7 @@ if (!empty($_POST['submitted'])) {
         // Récupération du dernier id
         $lastId = $pdo->lastInsertId();
         // Gestion de l'extention
-        if (!empty($_FILES['photo'])) {
+        if (!empty($_FILES['photo']['name'])) {
             switch ($typePhoto) {
                 case 'image/jpg':
                     $ext = 'jpg';
@@ -124,21 +124,21 @@ if (!empty($_POST['submitted'])) {
                 default:
                     break;
             }
+            // UPLOAD de l'image
+            Image::open($_FILES['photo']['tmp_name'])
+                ->cropResize(300, 300)
+                ->save('upload/thumbmail/logement_' . $lastId . '_300x300.' . $ext, $ext);
+            Image::open($_FILES['photo']['tmp_name'])
+                ->cropResize(150, 150)
+                ->save('upload/' . 'logement_' . $lastId . '.' . $ext, $ext);
+            // ajout de la photo en lien avec l'ID 
+            $sql = "UPDATE logement SET photo = :lastPhoto WHERE id_logement = :lastId";
+            $query = $pdo->prepare($sql);
+            // je securise
+            $query->bindValue(':lastId', $lastId, PDO::PARAM_STR);
+            $query->bindValue(':lastPhoto', 'logement_'. $lastId . '.' . $ext, PDO::PARAM_STR);
+            $query->execute();
         }
-        // UPLOAD de l'image
-        Image::open($_FILES['photo']['tmp_name'])
-            ->cropResize(300, 300)
-            ->save('upload/thumbmail/logement_' . $lastId . '_300x300.' . $ext, $ext);
-        Image::open($_FILES['photo']['tmp_name'])
-            ->cropResize(150, 150)
-            ->save('upload/' . 'logement_' . $lastId . '.' . $ext, $ext);
-        // ajout de la photo en lien avec l'ID 
-        $sql = "UPDATE logement SET photo = :lastPhoto WHERE id_logement = :lastId";
-        $query = $pdo->prepare($sql);
-        // je securise
-        $query->bindValue(':lastId', $lastId, PDO::PARAM_STR);
-        $query->bindValue(':lastPhoto', 'logement_'. $lastId . '.' . $ext, PDO::PARAM_STR);
-        $query->execute();
         // Redirection
         header('Location: affichage.php');
     }
